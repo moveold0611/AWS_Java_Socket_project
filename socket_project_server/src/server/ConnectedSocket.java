@@ -103,7 +103,7 @@ public class ConnectedSocket extends Thread{
 	
 	private void createRoom(String requestBody) {
 		String roomName = (String) gson.fromJson(requestBody, RequestBodyDto.class).getBody();
-		username = username + " <방장>";
+//		username = username + "<방장>"; // 방을 만들때 마다 붙음
 		Room newRoom = Room.builder()
 			.roomName(roomName)
 			.owner(username)
@@ -145,7 +145,14 @@ public class ConnectedSocket extends Thread{
 				ServerSender.getInstance().send(this.socket, removeTextArea);
 				
 				room.getUserList().forEach(con -> {
+					
+					if(room.getOwner().equals(con.username)) {
+						// 다른 방에 들어가면 방장표시가 안사라짐
+						username = username + "<방장>";
+					}
+					
 					usernameList.add(con.username);
+					
 				});
 				
 				room.getUserList().forEach(connectedSocket -> {
@@ -199,7 +206,7 @@ public class ConnectedSocket extends Thread{
 				room.getUserList().forEach(con -> {
 					usernameList.add(con.username);
 				});
-	
+				
 		
 				room.getUserList().forEach(connectedSocket -> {
 					RequestBodyDto<List<String>> updateUserListDto = new RequestBodyDto<List<String>>("updateUserList", usernameList);		
@@ -215,6 +222,13 @@ public class ConnectedSocket extends Thread{
 				});
 				
 				
+				
+				
+				
+			// 같은 방
+				
+				
+				// 
 				
 				//
 				
@@ -233,36 +247,18 @@ public class ConnectedSocket extends Thread{
 //					
 //				}
 				
-				
-				if(usernameList.isEmpty()) {
-					System.out.println("방 삭제 작동");
-					
-					List<String> roomNameList = new ArrayList<>();
-					
-					Server.roomList.forEach(roomList -> {
-						roomNameList.add(roomList.getRoomName());
-						roomNameList.remove(roomName);
-					});		
-					
-					RequestBodyDto<String> removeEmptyRoom =
-							new RequestBodyDto<String> ("removeRoom", roomName);
-							
-					Server.connectedSocketList.forEach( con -> {
-						ServerSender.getInstance().send(con.socket, removeEmptyRoom);
-					});
-										
-					RequestBodyDto<List<String>> updateRoomListRequestBodyDto = 
-							new RequestBodyDto<List<String>>("updateRoomList", roomNameList);					
-					Server.connectedSocketList.forEach(con -> {
-						ServerSender.getInstance().send(con.socket, updateRoomListRequestBodyDto); 						
-					});
-				}
+	
 				
 			}
-		});	
-		//
+		});
 	
 	}
+	
+	// 방장 나가기 > userList 0번이 나가면 userListClear?
+	private void clearRoom(String requestBody) {
+		
+	}
+	
 	
 	/*    메세지 창 초기화
 	RequestBodyDto<String> removeTextArea =

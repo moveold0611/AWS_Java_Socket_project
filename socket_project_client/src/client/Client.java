@@ -8,12 +8,14 @@ import java.awt.EventQueue;
 import java.io.IOException;
 
 import java.net.Socket;
+import java.util.List;
 import java.util.Objects;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JList;
+import javax.swing.JList.DropLocation;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
@@ -192,9 +194,7 @@ public class Client extends JFrame {
 				}
 			}	
 		});
-		
-		
-		
+				
 		roomListScrollPanel.setViewportView(roomList);
 		
 		usernamePanel = new JPanel();
@@ -251,7 +251,7 @@ public class Client extends JFrame {
 		chattingRoomPanel.add(userListScrollPane);
 		
 		userListModel = new DefaultListModel<>();
-		userList = new JList(userListModel);		
+		userList = new JList(userListModel);
 		userListScrollPane.setViewportView(userList);
 
 
@@ -272,9 +272,9 @@ public class Client extends JFrame {
 		exitChattingRoomButton.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				
 				int clicked = JOptionPane.showInternalConfirmDialog(mainCardPanel, "나가시겠습니까?");				
-				if(clicked == 0) {			
+				if(clicked == 0) {	
+					
 					String roomName = chattingRoomTitleTextField.getText();
 					
 					RequestBodyDto<String> requestBodyDto = 
