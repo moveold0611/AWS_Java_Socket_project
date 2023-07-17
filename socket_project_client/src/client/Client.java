@@ -2,12 +2,12 @@ package client;
 
 import java.awt.CardLayout;
 
-
 import java.awt.EventQueue;
 
 import java.io.IOException;
 
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -15,15 +15,14 @@ import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JList;
-import javax.swing.JList.DropLocation;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
 import client.dto.RequestBodyDto;
 import client.dto.SendMessage;
+import client.dto.SendWhisper;
 import lombok.Getter;
-
 
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -32,28 +31,30 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+
 import javax.swing.SwingConstants;
 
 
 @Getter
 public class Client extends JFrame {
 	private String username;
+	private String toUserName;
 	private Socket socket;
+	
+	private static Client instance;
 	
 	private CardLayout mainCardLayout;
 	private JPanel mainCardPanel;
 	
-	private JPanel chattingRoomListPanel;
 	private JScrollPane roomListScrollPanel;
+	private JPanel chattingRoomListPanel;
 	private DefaultListModel<String> roomListModel;
 	private JList roomList;
 	
 	private JPanel chattingRoomPanel;
 	private JTextField messageTextField;
 	private JTextArea chattingTextArea;
-	
-	
-	private static Client instance;
 	private DefaultListModel<String> userListModel;
 	private JList userList;			
 	private JScrollPane userListScrollPane;
@@ -63,6 +64,7 @@ public class Client extends JFrame {
 	private JPanel chattingRoomTitlePanel;
 	private JTextField chattingRoomTitleTextField;
 	private JScrollPane chattingTextAreaScrollPanel;
+	private JTextField toSendChattingTextField;
 	
 	
 	
@@ -82,10 +84,6 @@ public class Client extends JFrame {
 //		});
 //	}
 
-	
-	/**
-	 * Launch the application.
-	 */
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
@@ -99,8 +97,7 @@ public class Client extends JFrame {
 					
 					RequestBodyDto<String> requestBodyDto = new RequestBodyDto<String>("connection", frame.username);
 					ClientSender.getInstance().send(requestBodyDto);
-					
-					
+						
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -108,12 +105,14 @@ public class Client extends JFrame {
 		});
 	}
 
-	/**
-	 * Create the frame.
-	 */
 	public Client() {
 		
-		username = JOptionPane.showInputDialog(chattingRoomPanel, "아이디를 입력하세요.");			
+		username = JOptionPane.showInputDialog(chattingRoomPanel, "아이디를 입력하세요.");
+		
+		if(username.contains("<방장>")) {
+			JOptionPane.showMessageDialog(chattingRoomListPanel, "사용할 수 없는 이름입니다.", "아이디 생성 실패", JOptionPane.ERROR_MESSAGE);
+			System.exit(0);
+		}
 		
 		if(Objects.isNull(username)) {
 			System.exit(0);
@@ -129,7 +128,6 @@ public class Client extends JFrame {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
 	
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 450, 300);
@@ -194,7 +192,7 @@ public class Client extends JFrame {
 				}
 			}	
 		});
-				
+		
 		roomListScrollPanel.setViewportView(roomList);
 		
 		usernamePanel = new JPanel();
@@ -209,10 +207,37 @@ public class Client extends JFrame {
 		usernamePanel.add(usernameTextField);
 		usernameTextField.setColumns(10);
 						
+	// 채팅방 입장
 		chattingRoomPanel = new JPanel();
 		chattingRoomPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
 		chattingRoomPanel.setLayout(null);
 		mainCardPanel.add(chattingRoomPanel, "chattingRoomPanel");
+		
+		// ? 왜 안보여
+		userListScrollPane = new JScrollPane();
+		userListScrollPane.setBounds(294, 46, 128, 167);
+		chattingRoomPanel.add(userListScrollPane);
+		
+		userListModel = new DefaultListModel<>();
+		userList = new JList(userListModel);		
+		userListScrollPane.setViewportView(userList);
+		userList.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if(e.getClickCount() == 2) {
+					// 
+					mainCardLayout.show(mainCardPanel, "chattingRoomPanel");
+					toUserName = userListModel.get(userList.getSelectedIndex());
+					toSendChattingTextField.setText(toUserName);
+					
+					String wispherToUser = userListModel.get(userList.getSelectedIndex());
+					System.out.println(wispherToUser);
+					
+					RequestBodyDto<String> requestBodyDto = new RequestBodyDto<String>("whispher", wispherToUser);
+					// 채팅창의 채팅tabs 해당 유저로 바뀜
+				}
+			}
+		});
 		
 		chattingTextAreaScrollPanel = new JScrollPane();
 		chattingTextAreaScrollPanel.setBounds(12, 46, 270, 167);
@@ -225,36 +250,50 @@ public class Client extends JFrame {
 		messageTextField.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyPressed(KeyEvent e) {
-				if(e.getKeyCode() == KeyEvent.VK_ENTER) {
-					
-					SendMessage sendMessage = SendMessage.builder()
-							.fromUsername(username)
-							.messageBody(messageTextField.getText())
-							.build();
-					
-					RequestBodyDto<SendMessage> requestBodyDto = 
-							new RequestBodyDto<>("sendMessage", sendMessage); 
-					
-					ClientSender.getInstance().send(requestBodyDto);
-					messageTextField.setText("");
-				}
-			}
+				if(toSendChattingTextField.getText().equals("전체")) {
+					if(e.getKeyCode() == KeyEvent.VK_ENTER) {
+						
+						SendMessage sendMessage = SendMessage.builder()
+								.fromUsername(username)
+								.messageBody(messageTextField.getText())
+								.build();
+						
+						RequestBodyDto<SendMessage> sendMessagerequestBodyDto = 
+								new RequestBodyDto<>("sendMessage", sendMessage); 
+						ClientSender.getInstance().send(sendMessagerequestBodyDto);
+						messageTextField.setText("");
+						}
+		
+					} else {
+						if(e.getKeyCode() == KeyEvent.VK_ENTER) {
+							SendWhisper sendWhisper = SendWhisper.builder()
+									.fromUsername(username)
+									.toUsername(toUserName)
+									.messageBody(messageTextField.getText())
+									.build();
+							
+							RequestBodyDto<SendWhisper> sendWhispherrequestBodyDto = 
+									new RequestBodyDto<>("sendwhisper", sendWhisper); 
+							ClientSender.getInstance().send(sendWhispherrequestBodyDto);
+							
+							System.out.println(sendWhispherrequestBodyDto.toString());
+							messageTextField.setText("");
+						}
+					}
+			} 
 		});
 		
+		toSendChattingTextField = new JTextField("전체");
+		toSendChattingTextField.setHorizontalAlignment(SwingConstants.CENTER);
+		toSendChattingTextField.setEditable(false);
+		toSendChattingTextField.setBounds(12, 223, 51, 28);
+		chattingRoomPanel.add(toSendChattingTextField);
+		toSendChattingTextField.setColumns(10);
 		
-		messageTextField.setBounds(12, 223, 410, 28);
+		messageTextField.setBounds(75, 223, 347, 28);
 		chattingRoomPanel.add(messageTextField);
 		messageTextField.setColumns(10);
-		
-		userListScrollPane = new JScrollPane();
-		userListScrollPane.setBounds(294, 46, 128, 167);
-		chattingRoomPanel.add(userListScrollPane);
-		
-		userListModel = new DefaultListModel<>();
-		userList = new JList(userListModel);
-		userListScrollPane.setViewportView(userList);
-
-
+	
 		chattingRoomTitlePanel = new JPanel();
 		chattingRoomTitlePanel.setBounds(12, 10, 270, 26);
 		chattingRoomPanel.add(chattingRoomTitlePanel);
@@ -272,10 +311,23 @@ public class Client extends JFrame {
 		exitChattingRoomButton.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
+				
 				int clicked = JOptionPane.showInternalConfirmDialog(mainCardPanel, "나가시겠습니까?");				
-				if(clicked == 0) {	
-					
+				if(clicked == 0) {			
 					String roomName = chattingRoomTitleTextField.getText();
+					List<String> requestBody = new ArrayList<>();
+					
+					//
+					requestBody.add(roomName);
+					if(userListModel.get(0).equals(username + " <방장>")) {						
+						for(int i = 0; i < userListModel.size(); i++) {
+							requestBody.add(userListModel.get(i));
+						}
+						
+						RequestBodyDto<List<String>> requestBodyDtoUsername = 
+								new RequestBodyDto<>("removeRoom", requestBody); 
+						ClientSender.getInstance().send(requestBodyDtoUsername);
+					}
 					
 					RequestBodyDto<String> requestBodyDto = 
 							new RequestBodyDto<>("exit", roomName); 
@@ -283,14 +335,15 @@ public class Client extends JFrame {
 					mainCardLayout.show(mainCardPanel, "chattingRoomListPanel");
 					ClientSender.getInstance().send(requestBodyDto);
 					chattingRoomTitleTextField.setText(roomName);
-
+	
 				}else if(clicked == 1) {
 					return;
 				}
-			}
-			
+			}			
 		});
 		chattingRoomPanel.add(exitChattingRoomButton);
+		
+		
 
 		
 	}

@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
 
+import javax.swing.JOptionPane;
+
 import com.google.gson.Gson;
 
 import client.dto.RequestBodyDto;
@@ -45,7 +47,8 @@ public class ClientReceiver extends Thread{
 			case "updateUserList" :
 				List<String> usernameList = (List<String>) gson.fromJson(requestBody, RequestBodyDto.class).getBody();
 				Client.getInstance().getUserListModel().clear();
-				Client.getInstance().getUserListModel().addAll(usernameList);
+				usernameList.set(0, usernameList.get(0) + " <방장>");
+				Client.getInstance().getUserListModel().addAll(usernameList);				
 				break; 				
 				
 			case "showMessage" :
@@ -58,14 +61,15 @@ public class ClientReceiver extends Thread{
 				Client.getInstance().getChattingTextArea().setText("");
 				break;
 				
-			case "removeRoom" :
-//				System.out.println("룸리스트 삭제");
-//				String roomName = (String) gson.fromJson(requestBody, RequestBodyDto.class).getBody();
-//				Client.getInstance().getRoomList().remove(
-//						Client.getInstance().getRoomListModel().indexOf(roomName));
+			case "exitChattingRoom" : // 서버에서 명령을 받아 클라이언트를 채팅방에서 내보내는 스위치
+				String receiveExitMessage = (String) gson.fromJson(requestBody, RequestBodyDto.class).getBody();
+				JOptionPane.showMessageDialog(Client.getInstance().getChattingRoomListPanel(), receiveExitMessage);
+				Client.getInstance().getMainCardLayout().show(Client.getInstance().getMainCardPanel(), "chattingRoomListPanel");
 				break;
 				
-
+			case "whisper" :
+				String whispherToUser = (String) gson.fromJson(requestBody, RequestBodyDto.class).getBody();
+				Client.getInstance().getChattingTextArea().append(whispherToUser + "\n");
 		}
 	}
 	
