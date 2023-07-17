@@ -90,11 +90,11 @@ public class ConnectedSocket extends Thread{
 		
 	}
 		
-	
-	private void removeSocket() {
-		
-	}
-	
+//	
+//	private void removeSocket() {
+//		
+//	}
+//	
 	
 	
 	
