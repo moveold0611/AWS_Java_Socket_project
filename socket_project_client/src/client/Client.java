@@ -291,10 +291,18 @@ public class Client extends JFrame {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				if(e.getClickCount() == 2) {
-					String userName = userListModel.get(userList.getSelectedIndex());
-					mainCardLayout.show(mainCardPanel, "chattingRoomPanel");
-					toSendChattingTextField.setText(userName);
-					
+					if(userListModel.get(userList.getSelectedIndex()).equals(username) ||
+							userListModel.get(userList.getSelectedIndex()).equals(username + " <방장>"))
+					{
+						toSendChattingTextField.setText("전체");						
+					}else {
+						String userName = userListModel.get(userList.getSelectedIndex());
+						if(userName.contains("<방장>")) {
+							userName = userName.substring(0, userName.indexOf("<"));
+						}
+						mainCardLayout.show(mainCardPanel, "chattingRoomPanel");
+						toSendChattingTextField.setText(userName);
+					}
 				}
 			}
 		});

@@ -108,7 +108,7 @@ public class ConnectedSocket extends Thread{
 		Server.roomList.forEach(room -> {
 			if(room.getUserList().contains(this)) {
 				room.getUserList().forEach(toSenduser -> {
-					if(toSenduser.username.equals(toSend)) {
+					if((toSenduser.username + " <방장>").equals(toSend + "<방장>") || toSenduser.username.equals(toSend)) {
 						RequestBodyDto<String> dto = 
 								new RequestBodyDto<String>("showMessage", sendMessage.getFromUsername() + "님의 귓속말: " + sendMessage.getMessageBody());
 						ServerSender.getInstance().send(toSenduser.socket, dto);					
