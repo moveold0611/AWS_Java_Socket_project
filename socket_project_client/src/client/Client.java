@@ -76,15 +76,6 @@ public class Client extends JFrame {
 		}
 		return instance;
 	}
-	
-	
-//	public void TitleRefresh(String username) {
-//		SimpleGUIServer.roomList.forEach(titleName -> {
-//			if(titleName.getOwner() == username) {
-//				title = titleName.getRoomName();
-//			}
-//		});
-//	}
 
 	
 	/**
@@ -349,9 +340,6 @@ public class Client extends JFrame {
 			}			
 		});
 		chattingRoomPanel.add(exitChattingRoomButton);
-		
-		
-
-		
+				
 	}
 }

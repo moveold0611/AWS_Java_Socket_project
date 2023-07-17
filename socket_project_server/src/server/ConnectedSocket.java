@@ -46,6 +46,8 @@ public class ConnectedSocket extends Thread{
 				requestController(requestBody);
 			} catch (IOException e) {
 				System.out.println("클라이언트 연결 종료");
+//				removeRoom(username);
+//				exit(roomName);
 				break;
 			}
 		 }
@@ -134,9 +136,7 @@ public class ConnectedSocket extends Thread{
 	private void removeRoom(String requestBody) {
 		// 객체
 		String roomName = (String) gson.fromJson(requestBody, RequestBodyDto.class).getBody();
-		
 
-		
 		List<String> roomNameList = new ArrayList<>();
 		Server.roomList.forEach(item -> {
 			roomNameList.add(item.getRoomName());
