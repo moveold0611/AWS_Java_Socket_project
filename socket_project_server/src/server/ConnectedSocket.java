@@ -46,14 +46,29 @@ public class ConnectedSocket extends Thread{
 				requestController(requestBody);
 			} catch (IOException e) {
 				System.out.println("클라이언트 연결 종료");
-//				removeRoom(username);
-//				exit(roomName);
 				break;
 			}
 		 }
 	 }
-		 
-	private void requestController(String requsetBody) {
+
+	 
+	 private void removeTextArea() {
+			RequestBodyDto<String> removeTextArea =
+					new RequestBodyDto<String>("removeTextArea", null);
+			ServerSender.getInstance().send(this.socket, removeTextArea);
+	 }
+	 
+	 private void updateRoomList(List<String> roomNameList) {
+		 RequestBodyDto<List<String>> updateRoomListRequestBodyDto = 
+					new RequestBodyDto<List<String>>("updateRoomList", roomNameList);
+			Server.connectedSocketList.forEach(con -> {
+				ServerSender.getInstance().send(con.socket, updateRoomListRequestBodyDto);
+			});
+	 }
+	 
+	 
+	 
+	 private void requestController(String requsetBody) {
 
 		String resource = gson.fromJson(requsetBody, RequestBodyDto.class).getResource();
 //		TypeToken<RequestBodyDto<SendMessage>> token = new TypeToken<RequestBodyDto<SendMessage>>() {};
@@ -82,19 +97,11 @@ public class ConnectedSocket extends Thread{
 			case "toSendMessage" :
 				toSendMessage(requsetBody);
 				break;
-			case "removeSocket" :
-//				removeSocket(requsetBody);
-				break;
+
 		}
 		
 		
-	}
-		
-//	
-//	private void removeSocket() {
-//		
-//	}
-//	
+	}	
 	
 	
 	
@@ -163,11 +170,7 @@ public class ConnectedSocket extends Thread{
 		});
 		
 		// 클라이언트 룸리스트 업데이트			
-			RequestBodyDto<List<String>> updateRoomListRequestBodyDto = 
-					new RequestBodyDto<List<String>>("updateRoomList", roomNameList);
-			Server.connectedSocketList.forEach(con -> {
-				ServerSender.getInstance().send(con.socket, updateRoomListRequestBodyDto);
-			});
+			updateRoomList(roomNameList);
 			
 	}
 	
@@ -191,10 +194,7 @@ public class ConnectedSocket extends Thread{
 		});
 		
 		// 클라이언트에 불러온 리스트 업데이트
-		RequestBodyDto<List<String>> updateRoomListRequestBodyDto = 
-				new RequestBodyDto<List<String>>("updateRoomList", roomNameList);
-		
-		ServerSender.getInstance().send(socket, updateRoomListRequestBodyDto);
+		updateRoomList(roomNameList);
 	}
 	
 	
@@ -224,9 +224,7 @@ public class ConnectedSocket extends Thread{
 		});
 		
 		// 메세지 창 초기화
-		RequestBodyDto<String> removeTextArea =
-				new RequestBodyDto<String>("removeTextArea", "");
-		ServerSender.getInstance().send(this.socket, removeTextArea);
+		removeTextArea();
 
 		// 업데이트
 		RequestBodyDto<List<String>> updateRoomListRequestBodyDto = 
@@ -234,6 +232,8 @@ public class ConnectedSocket extends Thread{
 		
 		Server.connectedSocketList.forEach(con -> {
 			ServerSender.getInstance().send(con.socket, updateRoomListRequestBodyDto);	
+			
+			System.out.println(roomName);
 		});		
 	}
 	
@@ -254,7 +254,6 @@ public class ConnectedSocket extends Thread{
 		
 		// 삭제된 방 입장 방지
 		if(!roomNameList.contains(roomName)) {
-			System.out.println("test");
 			RequestBodyDto<String> exitMessage =
 				new RequestBodyDto<>("exitChattingRoom", "방이 존재하지 않습니다.");				
 			ServerSender.getInstance().send(this.socket, exitMessage);
@@ -263,13 +262,9 @@ public class ConnectedSocket extends Thread{
 					new RequestBodyDto<List<String>>("updateRoomList", new ArrayList());
 			ServerSender.getInstance().send(this.socket, updateUserListRequestBodyDto);
 			
-			RequestBodyDto<String> removeTextArea =
-					new RequestBodyDto<String>("removeTextArea", " ");
-			ServerSender.getInstance().send(this.socket, removeTextArea);
+			removeTextArea();
 			
-			RequestBodyDto<List<String>> updateRoomListRequestBodyDto =
-				new RequestBodyDto<List<String>>("updateRoomList", roomNameList);			
-			ServerSender.getInstance().send(socket, updateRoomListRequestBodyDto);					
+			updateRoomList(roomNameList);				
 		}
 		
 		
@@ -280,15 +275,13 @@ public class ConnectedSocket extends Thread{
 				List<String> usernameList = new ArrayList<>();
 				
 				// 메세지 창 초기화
-				RequestBodyDto<String> removeTextArea =
-						new RequestBodyDto<String>("removeTextArea", "");
-				ServerSender.getInstance().send(this.socket, removeTextArea);
+				removeTextArea();
 				
+				
+				// 업데이트
 				room.getUserList().forEach(con -> {				
 					usernameList.add(con.username);				
 				});
-				
-				// 업데이트
 				room.getUserList().forEach(connectedSocket -> {
 					RequestBodyDto<List<String>> updateUserListDto = 
 							new RequestBodyDto<List<String>>("updateUserList", usernameList);
@@ -306,6 +299,8 @@ public class ConnectedSocket extends Thread{
 				
 			}
 		});	
+		
+		System.out.println(roomName);
 	}
 	
 	
@@ -340,12 +335,15 @@ public class ConnectedSocket extends Thread{
 	
 	
 	private void exit(String requsetBody) {
+		System.out.println("test");
 		// 객체
 		String roomName = (String) gson.fromJson(requsetBody, RequestBodyDto.class).getBody();	
-
+System.out.println(roomName);
 		// 채팅방 안 리스트에서 내 이름 삭제
 		Server.roomList.forEach(room -> {
+			System.out.println("test3");
 			if(room.getRoomName().equals(roomName)) {
+				System.out.println("test2");
 				room.getUserList().remove(this);
 				
 				List<String> usernameList = new ArrayList<>();
@@ -355,24 +353,22 @@ public class ConnectedSocket extends Thread{
 				});
 	
 				// 업데이트 및 나가기 메세지 전송
-				room.getUserList().forEach(connectedSocket -> {
 					RequestBodyDto<List<String>> updateUserListDto = new RequestBodyDto<List<String>>("updateUserList", usernameList);		
 					RequestBodyDto<String> exitMessageDto = new RequestBodyDto<String>("showMessage", username + "님이 나갔습니다.");
 					
-					ServerSender.getInstance().send(connectedSocket.socket, updateUserListDto);
+					Server.connectedSocketList.forEach(con -> {	
+					ServerSender.getInstance().send(con.socket, updateUserListDto);
 					try {
 						Thread.sleep(10);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
-					ServerSender.getInstance().send(connectedSocket.socket, exitMessageDto);
-				
-					
+					ServerSender.getInstance().send(con.socket, exitMessageDto);			
 				});
 				
 				
 			}
-			
+			System.out.println("test4");
 			
 		});			
 	}	
@@ -406,11 +402,3 @@ public class ConnectedSocket extends Thread{
   	case3		for(int i = 0; i < simpleGUIServer.connectedSocketList.size(); i++) {}		
 				
 */
-		 
-		 
-	
-	
-
-	 
-	
-
